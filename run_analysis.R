@@ -1,0 +1,27 @@
+library(dplyr)
+df.test <- read.table("X_test.txt")
+df.train <- read.table("X_train.txt")
+df <- rbind(df.test, df.train)
+act.train <- read.table("y_train.txt")
+act.test <- read.table("y_test.txt")
+act <- rbind(act.train, act.test)
+subject.test <- read.table("subject_test.txt")
+subject.train <- read.table("subject_train.txt")
+subject <- rbind(subject.test, subject.train)
+act.labels <- read.table("activity_labels.txt")
+features <- read.table("features.txt")
+featuresSubsetMean <- features[grep("mean()", features$V2), ]
+featuresSubsetMean <- featuresSubsetMean[- grep("Freq", featuresSubsetMean$V2), ]
+featuresSubsetStd <- features[grep("std()", features$V2), ]
+featureID <- rbind(featuresSubsetMean, featuresSubsetStd)
+df <- select(df, featureID$V1)
+df <- cbind(act, subject, df)
+featureDesc <- as.character(featureID$V2)
+names(df) <- c("ActivityID","Subject ID", featureDesc)
+df$Activity <- as.character(act.labels[match(df$ActivityID, act.labels$V1), 2])
+df$Activity <- as.factor(df$Activity)
+library(reshape2)
+dfMelt <- melt(df, id=c("Activity","SubjectID"), measure.vars=featureDesc)
+data <- dcast(dfMelt, Activity + SubjectID ~ variable, mean)
+write.table(data, "tidydata.txt")
+
